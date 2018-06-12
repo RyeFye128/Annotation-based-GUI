@@ -1,0 +1,40 @@
+package autogui.binding;
+
+import java.awt.Container;
+import java.lang.ref.WeakReference;
+
+import autogui.binding.action.*;
+import autogui.binding.property.*;
+
+public abstract class AbstractBinding {
+	protected WeakReference<Container> ViewRef;
+	protected WeakReference<Object> ObjectRef;
+
+	public AbstractBinding(Container view, Object object) throws IllegalArgumentException {
+		if (view == null)
+			throw new IllegalArgumentException("View cannot be null");
+		if (object == null)
+			throw new IllegalArgumentException("Object cannot be null");
+
+		ViewRef = new WeakReference<>(view);
+		ObjectRef = new WeakReference<>(object);
+	}
+
+	protected abstract void addViewListener();
+
+	public static AbstractBinding create(Container view, Object object, AbstractBindingStep step)
+			throws IllegalAccessException {
+		switch (step.getType()) {
+		case Action:
+			return new ActionBinding(view, object, (ActionBindingStep) step);
+		case Change:
+			return new ChangePropertyBinding(view, object, (ChangePropertyBindingStep) step);
+		case InputMethod:
+			return new InputMethodPropertyBinding(view, object, (InputMethodPropertyBindingStep) step);
+		case Item:
+			return new ItemPropertyBinding(view, object, (ItemPropertyBindingStep) step);
+		default:
+			return null;
+		}
+	}
+}

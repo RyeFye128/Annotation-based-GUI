@@ -1,0 +1,16 @@
+import org.junit.*;
+
+/*
+ * Test cases for the AutoGui system. Combines both black box and white box methods. Coverage is determined
+ * using Jacoco on the Jenkins server. Unit tests are done via JUnit.
+ */
+
+public class TestCases {
+
+	@Test
+	public void tester()
+	{
+		boolean s = true;
+		Assert.assertTrue(s);
+	}
+}

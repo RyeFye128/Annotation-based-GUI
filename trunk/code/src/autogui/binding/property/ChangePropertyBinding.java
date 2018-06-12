@@ -1,0 +1,35 @@
+package autogui.binding.property;
+
+import java.awt.Container;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+/**
+ * Binding for view objects which support ChangeListeners (such as sliders, spinners, etc.)
+ * @author Shane
+ *
+ */
+public class ChangePropertyBinding extends AbstractPropertyBinding implements ChangeListener {
+
+	public ChangePropertyBinding(Container view, Object object,
+			ChangePropertyBindingStep invoker) throws IllegalAccessException {
+		super(view, object, invoker);
+	}
+
+	@Override
+	protected void addViewListener() {
+		Container view = ViewRef.get();
+		if (view != null)
+			((ChangePropertyBindingStep) Invoker).AddListenerFunction.accept(view, this);
+	}
+
+	@Override
+	public void stateChanged(ChangeEvent arg) {
+		assert Invoker.SetMethod != null && Invoker.SetMethod.getParameterCount() != 1 : "Invalid Set Method";
+		assert Invoker.GetAction != null : "Invalid Get Action";
+
+		saveObjectValue();
+	}
+
+}

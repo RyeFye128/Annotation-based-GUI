@@ -1,0 +1,32 @@
+package autogui.binding.property;
+
+import java.awt.Container;
+import java.lang.reflect.Method;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+
+import autogui.binding.AbstractBindingStep;
+import autogui.binding.BindingMode;
+
+public abstract class AbstractPropertyBindingStep extends AbstractBindingStep {
+
+	public final Method GetMethod;
+	public final Method SetMethod;
+	public final Function<Container, Object> GetAction;
+	public final BiConsumer<Container, Object> SetAction;
+	
+	public AbstractPropertyBindingStep(String elementId, BindingMode mode, 
+			  Method getMethod, Method setMethod,
+			  Function<Container, Object> getViewPropertyAction, 
+			  BiConsumer<Container, Object> setViewPropertyAction)
+	{
+		super(elementId, mode);
+		if (mode == BindingMode.Command)
+			throw new IllegalArgumentException("Property binding cannot be used in Command mode");
+		
+		GetMethod = getMethod;
+		SetMethod = setMethod;
+		GetAction = getViewPropertyAction;
+		SetAction = setViewPropertyAction;
+	}
+}

@@ -1,0 +1,46 @@
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.*;
+
+public class RyanBinder implements ActionListener
+{
+
+	public RyanBinder(JFrame theFrame)
+	{
+		Container container = theFrame.getContentPane();
+		Component[] widgets = container.getComponents();
+
+		for (Component comp : widgets)
+		{
+			if (comp instanceof JButton)
+			{
+				((JButton) comp).addActionListener(this);
+			}
+		}
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e)
+	{
+
+		Component widget = (Component) e.getSource();
+		String widgetId = widget.getName();
+		//widgetId = widgetId.substring(widgetId.length() - 2);
+		int idAsInt = Integer.parseInt(widgetId);
+		
+		switch (idAsInt)
+		{
+		case 3:
+			JOptionPane.showMessageDialog(null, "Button with id 3 was clicked");
+			// call method ending in 03
+			break;
+		case 4:
+			JOptionPane.showMessageDialog(null, "Button with id 4 was clicked");
+			// call method ending in 04
+			break;
+		}
+
+	}
+}

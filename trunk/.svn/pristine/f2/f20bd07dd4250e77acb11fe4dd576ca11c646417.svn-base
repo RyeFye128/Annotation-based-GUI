@@ -1,0 +1,24 @@
+package autogui.adapter;
+
+import autogui.binding.*;
+import java.awt.Component;
+import java.util.List;
+
+public class ViewAdapter{
+	
+	private List<AbstractBindingStep> Steps;
+	public ViewAdapter(List<AbstractBindingStep> steps){
+		Steps = steps;
+	}
+	public void Bind(Component view, Object obj){
+		for (AbstractBindingStep step : Steps)
+		{
+			if (step instanceof PropertyBindingStep)
+			{
+				PropertyBinding.Create(view, obj, (PropertyBindingStep)step);
+			}
+			// else if (step instanceof CommandBindingStep)
+		}
+	}
+	
+}

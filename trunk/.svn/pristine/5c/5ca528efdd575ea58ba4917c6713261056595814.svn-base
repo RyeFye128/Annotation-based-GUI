@@ -1,0 +1,12 @@
+import org.junit.*;
+
+
+public class TestCases {
+
+	@Test
+	public static void tester()
+	{
+		boolean s = true;
+		Assert.assertTrue(s);
+	}
+}

@@ -1,0 +1,21 @@
+
+/*
+ * This is the test class being used for reading in annotations.
+ */
+
+public class AnnotatedClass extends Annotations{
+	
+
+
+	@label(desc = "a label",  xCord = 0, yCord = 0, id = 1)
+	public static void label1()
+	{
+		
+	}
+	
+	@label(desc = "another label", xCord = 0, yCord = 0, id = 1)
+	public static void tt()
+	{
+		
+	}
+}

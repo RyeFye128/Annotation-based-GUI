@@ -1,0 +1,65 @@
+import javax.swing.*;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+@SuppressWarnings("serial")
+public class Generator extends JFrame{
+	
+	/*
+	 * Generator class for AutoGui. This class will read in, from reflection, the annotations
+	 * from another class. It will then create a JFrame that is populated with the widgets taken
+	 * from the annotations. This class is, in itself, a JFrame.
+	 * 
+	 * Note: Methods with labels need to be public.
+	 * 
+	 * The try/catches can be annoying, but Java needs them (please tell me im wrong).
+	 */
+
+	public Generator(Class<?> c)
+	{
+		source = c;
+	}
+
+	private static Class<?> source;
+
+	public void printAnnotations() 
+	{
+		System.out.println("Printing annotations and their values...\n");
+		try {
+			readAnnotations();
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	private void readAnnotations() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		// TODO Auto-generated method stub
+		
+		String name = source.getName();
+		System.out.println("class name: " + name);
+		
+		//Get the methods and cycle through them
+		Method[] m = source.getMethods();
+		for(Method mf: m)
+		{
+			//Each method can have an annotation list
+			Annotation[] an = mf.getAnnotations();
+			for(Annotation ano : an)
+			{
+				//Class is a proxy...
+				Class temp = ano.annotationType();
+				//Trims name to only include the actual annotation name.
+				//System.out.println("\nAnnotation Name: " + temp.getName().substring(name.length() + 1, temp.getName().length()));
+				System.out.println("\nAnnotation Name: " + temp.getName().substring(12));
+				//Annotation attributes are apparently methods...
+				for(Method met: temp.getDeclaredMethods())
+				{
+					Object value  = met.invoke(ano, (Object[])null);
+					System.out.println(met.getName() + ": " + value);
+				}
+				System.out.println("---------------------------------");
+				
+			}
+		}
+	}
+}

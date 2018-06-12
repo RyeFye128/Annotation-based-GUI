@@ -1,0 +1,107 @@
+import javax.swing.*;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+@SuppressWarnings("serial")
+public class Generator {
+	
+	/*
+	 * Generator class for AutoGui. This class will read in, from reflection, the annotations
+	 * from another class. It will then create a JFrame that is populated with the widgets taken
+	 * from the annotations. This class is, in itself, a JFrame.
+	 * 
+	 * Note: Methods with labels need to be public.
+	 * 
+	 * The try/catches can be annoying, but Java needs them (please tell me im wrong).
+	 */
+	
+	/*
+	 * Creates an array list which each element is a linked list containing a single annotation's def
+	 * this will be used for creating the gui
+	 */
+	ArrayList<LinkedList<AnnotationHolder>> annotationList = new ArrayList<LinkedList<AnnotationHolder>>();
+	ArrayList<AnnotationHolder> binderList = new ArrayList<AnnotationHolder>();
+	
+
+	public Generator(Class<?> c)
+	{
+		source = c;
+	}
+
+	private static Class<?> source;
+
+	
+	public void parseAnnotations() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		// TODO Auto-generated method stub
+		AnnotationHolder tempAno;
+
+		//System.out.println("class name: " + name);
+		
+		//Get the methods and cycle through them
+		Method[] m = source.getMethods();
+		for(Method mf: m)
+		{
+			//Each method can have an annotation list
+			Annotation[] an = mf.getAnnotations();
+			for(Annotation ano : an)
+			{
+				//Class is a proxy...
+				Class temp = ano.annotationType();
+				//Shanes list
+				AnnotationHolder binderElement = new AnnotationHolder(temp.getName().substring(12), -1 + "");
+				//Trims name to only include the actual annotation name.
+				//System.out.println("\nAnnotation Name: " + temp.getName().substring(name.length() + 1, temp.getName().length()));
+				System.out.println("\nAnnotation Name: " + temp.getName().substring(12));
+				//Annotation attributes are apparently methods...
+				LinkedList<AnnotationHolder> temper = new LinkedList<AnnotationHolder>();
+				for(Method met: temp.getDeclaredMethods())
+				{
+					Object value  = met.invoke(ano, (Object[])null);
+					//Shanes list
+					if(met.getName().equals("id"))
+					{
+						binderElement = new AnnotationHolder(temp.getName().substring(12), value.toString());
+					}
+					//System.out.println(met.getName() + ": " + value.toString());
+					tempAno = new AnnotationHolder(met.getName(), value.toString());
+					temper.add(tempAno);
+				}
+				//System.out.println("---------------------------------");
+				annotationList.add(temper);
+				binderList.add(binderElement);
+				
+			}
+		}
+		/*
+		 * Debugging purposes. Prints out the annotation list.
+		 */
+		for(LinkedList<AnnotationHolder> ah: annotationList) 
+		{
+			for(AnnotationHolder aa: ah)
+			{
+				System.out.println(aa.getName() + ": " + aa.getValue());
+				
+			}
+			System.out.println("end of list");
+		}
+		/*
+		 * Print out the list of annotation names and their ids, for Shane
+		 * Note: the order of print changes on each execution?
+		 */
+		System.out.println("\nnow Print Shanes list\n(Name, Id)");
+		for(AnnotationHolder a: binderList)
+		{
+			System.out.println(a.getName() + ": "  + a.getValue());
+		}
+	}
+	/*
+	 * Gives the binderList to Resolver, mainly for binder to use
+	 */
+	protected ArrayList<AnnotationHolder> getBinderList()
+	{
+		return binderList;
+	}
+	//TODO work on the JFrame.
+}

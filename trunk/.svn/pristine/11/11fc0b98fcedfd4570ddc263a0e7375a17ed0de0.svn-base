@@ -1,0 +1,178 @@
+<project name="poly" default="run" basedir="." xmlns:jacoco="antlib:org.jacoco.ant">
+<!-- As in Java source, I'm not a fan of whole-file indentation, so
+     first level project tags are not indented. -->
+<description>
+   Base project for fun with polygons
+   Author: Jonathan Cook
+   Permissions: Freely usable and modifiable without citation
+   Usage: default target is "run", so just saying "ant" will
+      build and then just run a sample Poly run, with no unit
+      testing and no coverage. However, MOST of this
+      build file is for unit testing with coverage, with the
+      final target being "jacocoreport"; so "ant jacocoreport"
+      will build and run the JUnit tests with JaCoCo coverage,
+      and then will use JaCoCo to generate the HTML report. If
+      you install JUnit and JaCoCo and set up everything correctly,
+      this will work for you. This build file will also work under
+      Jenkins.
+</description>
+
+<!-- Properties (mostly project subdirectories) -->
+<property name="source.dir" location="src" />
+<property name="build.dir" location="build" />
+<property name="test.dir" location="test" />
+<property name="doc.dir" location="doc" />
+<property name="report.dir" location="report" />
+<property environment="env"/> <!-- set prefix to use for environment variables -->
+
+<!-- Create a T/F flag for whether we are running under Jenkins -->
+<!-- Jenkins sets $HOME to /var/lib/jenkins, so we test it -->
+<condition property="jenkins">
+   <equals arg1="/var/lib/jenkins" arg2="${env.HOME}" />
+</condition>
+
+<!-- Three targets work together to set alternate JUnit and JaCoCo paths -->
+<!-- The first two are an if-else on the T/F property "jenkins" -->
+<!-- The last target "setpaths" uses the first two -->
+<target name="setpathj" if="jenkins">
+   <echo message="Setting paths for Jenkins (${env.HOME})" />
+   <path id="junit.class.path" >
+      <pathelement location="/usr/share/java/junit4-4.11.jar"/>
+      <pathelement location="/usr/share/java/hamcrest-core-1.3.jar" />
+      <pathelement location="${build.dir}" />
+   </path>
+   <property name="jacocodir" location="/usr/local/jacoco/lib"/>
+</target>
+<target name="setpathh" unless="jenkins">
+   <!-- CHANGE ALL PATHS in this target for your own build environment -->
+   <echo message="Setting paths for home (${env.HOME})" />
+   <path id="junit.class.path" >
+      <pathelement location="/home/jcook/tools/junit/junit-4.12.jar"/>
+      <pathelement location="/home/jcook/tools/junit/hamcrest-core-1.3.jar" />
+      <pathelement location="${build.dir}" />
+   </path>
+   <property name="jacocodir" location="/home/jcook/tools/jacoco/lib"/>
+</target>
+<target name="setpaths" depends="setpathj,setpathh" />
+
+<!-- Clean: delete all stuff that gets built -->
+<target name="clean" depends="setpaths">
+   <delete dir="${build.dir}" />
+   <delete dir="${doc.dir}" />
+   <delete dir="${report.dir}" />
+   <delete>
+      <fileset dir="${test.dir}" includes="*.class *.xml"/>
+   </delete>
+   <delete>
+      <fileset dir="." includes="*.exec"/>
+   </delete>
+   <!-- Import task definitions for JaCoCo (must be done after setpaths)-->
+   <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+      <classpath path="${jacocodir}/jacocoant.jar"/>
+   </taskdef>
+</target>
+
+<!-- Makedir: make new build and docs directories -->
+<target name="makedirs" depends="setpaths">
+   <mkdir dir="${build.dir}" />
+   <mkdir dir="${doc.dir}" />
+   <mkdir dir="${report.dir}" />
+   <!-- Import task definitions for JaCoCo (must be done after setpaths)-->
+   <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+      <classpath path="${jacocodir}/jacocoant.jar"/>
+   </taskdef>
+</target>
+
+<!-- Compile project program (but not tests) -->
+<target name="compile" depends="makedirs" description="compile the source ">
+   <javac includeantruntime="false" debug="on" 
+          srcdir="${source.dir}" destdir="${build.dir}"/>
+</target>
+
+<!-- Run the project program as one sample execution -->
+<target name="run" depends="compile" description="example run">
+   <java classname="Poly" classpath="${build.dir}" fork="yes"> 
+      <arg line="1 2 3 4 5 6"/>
+   </java>
+</target>
+
+<!-- Run the project program under JaCoCo -->
+<target name="jacocorun" depends="compile" description="example run w/ JaCoCo">
+   <java classname="Poly" classpath="${build.dir}" fork="yes"> 
+      <arg line="1 2 3 4 5 6"/>
+      <jvmarg line="-javaagent:${jacocodir}/jacocoagent.jar"/>
+   </java>
+</target>
+
+<!-- Compile any JUnit tests -->
+<target name="compiletests" depends="compile" description="compile JUnit tests">
+   <javac includeantruntime="false" debug="on" 
+          srcdir="${test.dir}" destdir="${test.dir}">
+      <classpath refid="junit.class.path" />
+   </javac>
+</target>
+
+<!-- Test: Run any JUnit tests -->
+<target name="test" depends="compiletests" description="run JUnit tests">
+   <junit printsummary="true" fork="true" haltonfailure="no">
+      <classpath refid="junit.class.path" />
+      <classpath>
+         <pathelement location="${build.dir}"/>
+         <pathelement location="${test.dir}"/>
+      </classpath>
+      <formatter type="xml" />
+      <batchtest todir="${test.dir}">
+         <fileset dir="${test.dir}">
+            <include name="**/*Test*.java" />
+         </fileset>
+      </batchtest>
+   </junit>
+</target>
+
+<!-- Run any JUnit tests also using the JaCoCo coverage tool -->
+<target name="jacocotest" depends="compiletests">
+   <jacoco:coverage destfile="${report.dir}/jacoco.exec">
+      <junit printsummary="true" haltonfailure="no" haltonerror="no" showoutput="true" fork="yes">
+         <classpath>
+            <path refid="junit.class.path"/>
+            <pathelement location="${build.dir}"/>
+            <pathelement location="${test.dir}"/>
+         </classpath>
+         <formatter type="xml" />
+         <batchtest todir="${report.dir}">
+            <fileset dir="${test.dir}">
+               <include name="**/*Test*.java" />
+            </fileset>
+         </batchtest>
+      </junit>
+   </jacoco:coverage>
+</target>
+
+<!-- tests if new jacoco report needs generated by checking if top report file
+     (index.html) is newer than the run data file (jacoco.exec) -->
+<target name="checkReport">
+   <uptodate property="report.notneeded" targetfile="${report.dir}/index.html" 
+             srcfile="${report.dir}/jacoco.exec" />
+</target>
+
+<!-- generate a new jacoco report from a new data file; only runs if needed -->
+<target name="jacocoreport" depends="jacocotest,checkReport" unless="report.notneeded">
+   <jacoco:report>
+      <executiondata>
+         <file file="${report.dir}/jacoco.exec"/>
+      </executiondata>
+      <structure name="poly">
+         <classfiles>
+            <fileset dir="${build.dir}">
+               <exclude name="**/Poly.class"/> <!-- exclude main -->
+            </fileset>
+         </classfiles>
+         <sourcefiles encoding="UTF-8">
+            <fileset dir="${source.dir}"/>
+         </sourcefiles>
+      </structure>
+      <html destdir="${report.dir}"/>
+   </jacoco:report>
+</target>
+
+</project>

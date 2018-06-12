@@ -1,0 +1,218 @@
+import javax.swing.*;
+import java.awt.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.nio.channels.NetworkChannel;
+import java.util.ArrayList;
+import java.util.LinkedList;
+
+/*
+ * Generator class for AutoGui. This class will read in, from reflection, the annotations
+ * from another class. It will then create a JFrame that is populated with the widgets taken
+ * from the annotations. This class is, in itself, a JFrame.
+ * 
+ * The JFrame will have the girdlayout, as specified at https://docs.oracle.com/javase/tutorial/uiswing/layout/visual.html
+ * - easy and effective
+ * - uses X and Y coordinates
+ * - eventually do gridbaglayout, although very complex
+ * 
+ * Note: Methods with labels need to be public.
+ * 
+ * The try/catches can be annoying, but Java needs them (please tell me im wrong).
+ */
+
+
+
+
+public class Generator {
+	
+	/*
+	 * Creates an array list which each element is a linked list containing a single annotation's def
+	 * this will be used for creating the gui
+	 * Create an array list of annotationholders for Shane.
+	 * 
+	 * Then, create the actual JFrame.
+	 */
+	
+	private ArrayList<LinkedList<AnnotationHolder>> annotationList = new ArrayList<LinkedList<AnnotationHolder>>();
+	private ArrayList<AnnotationHolder> binderList = new ArrayList<AnnotationHolder>();
+	private ArrayList<AnnotationHolder> layoutInfo = new ArrayList<AnnotationHolder>();
+	private JFrame shell;
+	private static Class<?> source;
+	private static AnnotationHolder g; //will hold layout information
+	
+	private Container content;
+	private Dimension dimen;
+
+	public Generator(Class<?> c) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+	{
+		source = c;
+		parseAnnotations(); 
+		populateFrame();
+	}
+
+	
+
+	/*
+	 * Parses the given source code for annotations and saves them in an arraylist, which each index of this array is a linked list that
+	 * holds annotationinformation (using annotationHolder).
+	 * 
+	 * It also creates the export list, which is composed of the annotation type and its id. This will be exported to binder.
+	 */
+	public void parseAnnotations() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		
+		AnnotationHolder tempAno;
+		LinkedList<AnnotationHolder> currentIndex;
+		Method[] m = source.getMethods();
+		AnnotationHolder binderElement;//list to be exported
+		Class temp;// a proxy for seeing annotations
+		Object value;//contains annotation value
+		boolean isLayout;
+		
+		for(Method mf: m)
+		{
+			//Each method can have an annotation list
+			Annotation[] an = mf.getAnnotations();
+			for(Annotation ano : an)
+			{
+				temp = ano.annotationType();//Class is a proxy...
+				isLayout = false;
+				binderElement = new AnnotationHolder(temp.getName().substring(12), -1 + "");
+				
+				//System.out.println("\nAnnotation Name: " + temp.getName().substring(12));
+				
+				if(temp.getName().contains("layout"))
+				{
+					isLayout = true;
+				}
+				//Needs to clear this list of all contents each iteration
+				currentIndex = new LinkedList<AnnotationHolder>();
+				for(Method met: temp.getDeclaredMethods())
+				{
+					value  = met.invoke(ano, (Object[])null);
+					tempAno = new AnnotationHolder(met.getName(), value.toString());
+					/*
+					 * if it contains layout info...store it in a specialized holder and save that to a list. We dont want
+					 * the layout information being inserted into the annotation list. 
+					 */
+					if(isLayout)
+					{
+						layoutInfo.add(tempAno);
+					}
+				
+					else
+					{ 
+						currentIndex.add(tempAno);
+						
+						if(met.getName().equals("id"))//Shanes list
+						{
+							binderElement = new AnnotationHolder(temp.getName().substring(12), value.toString());
+						}
+						//System.out.println(met.getName() + ": " + value.toString());	
+					}
+					
+				}
+				//System.out.println("---------------------------------");
+				annotationList.add(currentIndex);
+				binderList.add(binderElement);
+				isLayout = false;
+			}
+		}
+	}
+		
+		 /* Debugging purposes. Prints out the annotation list.
+		 */
+		/*for(LinkedList<AnnotationHolder> ah: annotationList) 
+		{
+			for(AnnotationHolder aa: ah)
+			{
+				System.out.println(aa.getName() + ": " + aa.getValue());
+				
+			}
+			System.out.println("end of list");
+		}
+		/*
+		 * Print out the list of annotation names and their ids, for Shane
+		 * Note: the order of print changes on each execution?
+		 
+		System.out.println("\nnow Print Shanes list\n(Name, Id)");
+		for(AnnotationHolder a: binderList)
+		{
+			System.out.println(a.getName() + ": "  + a.getValue());
+		}
+	}
+	/*
+	 * Gives the binderList to Resolver, mainly for binder to use
+	 */
+	protected ArrayList<AnnotationHolder> getBinderList()
+	{
+		return binderList;
+	}
+	//TODO work on the JFrame.
+	
+	private void populateFrame()
+	{
+		
+		
+		shell = new JFrame("AutoGui");
+		//shell.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		dimen = new Dimension();
+		
+		content = shell.getContentPane();
+		GridLayout layout = new GridLayout();
+		
+		
+		for(AnnotationHolder a: layoutInfo)
+		{
+			//System.out.println(a.getName() + ": " + a.getValue());
+		}
+		//System.out.println("---------------------------------\n");
+		/*
+		 * Go through the layout annotations and setup the layout of the JFrame
+		 */
+		for(AnnotationHolder a: layoutInfo)
+		{
+			switch(a.getName())
+			{
+			case "range":
+				dimen.height = Integer.parseInt(a.getValue());
+				break;
+			case "domain":
+				dimen.width = Integer.parseInt(a.getValue());
+				break;
+			case "rows":
+				layout.setRows(Integer.parseInt(a.getValue()));
+				break;
+			case "columns":
+				layout.setColumns(Integer.parseInt(a.getValue()));
+				break;
+			case "hGap":
+				layout.setHgap(Integer.parseInt(a.getValue()));
+				break;
+			case "vGap":
+				layout.setVgap(Integer.parseInt(a.getValue()));
+			}
+		}
+		
+		
+		content.setLayout(layout);
+		shell.pack();
+		shell.setVisible(true);
+		shell.setSize(dimen);
+
+		//System.out.println("Dimension is: (" + dimen.getWidth() + ", " + dimen.getHeight() + ")");
+		//System.out.println(dimen.getWidth() + "\n" + dimen.getHeight() + "\n" + layout.getRows() + "\n" + layout.getColumns());
+		
+		//System.out.println("---------------------------------");
+		/*for(LinkedList<AnnotationHolder> ah: annotationList) 
+		{
+			for(AnnotationHolder aa: ah)
+			{
+				System.out.println(aa.getName() + ": " + aa.getValue());
+				
+			}
+			System.out.println("---------------------------------");
+		}*/
+	}
+}

@@ -1,0 +1,19 @@
+import java.lang.reflect.InvocationTargetException;
+
+import org.junit.*;
+
+/*
+ * Test cases for the AutoGui system. Combines both black box and white box methods. Coverage is determined
+ * using Jacoco on the Jenkins server. Unit tests are done via JUnit.
+ */
+
+public class TestCases {
+
+	
+	@Test public void tester() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException 
+	{
+		Generator gen = new Generator(AnnotatedClass.class);
+		boolean s = true;
+		Assert.assertTrue(s);
+	}
+}

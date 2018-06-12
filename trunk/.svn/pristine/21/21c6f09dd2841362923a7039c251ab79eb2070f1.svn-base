@@ -1,0 +1,309 @@
+import javax.swing.*;
+import java.awt.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.nio.channels.NetworkChannel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+
+/*
+ * Generator class for AutoGui. This class will read in, from reflection, the annotations
+ * from another class. It will then create a JFrame that is populated with the widgets taken
+ * from the annotations. This class is, in itself, a JFrame.
+ * 
+ * The JFrame will have the girdlayout, as specified at https://docs.oracle.com/javase/tutorial/uiswing/layout/visual.html
+ * - easy and effective
+ * - uses X and Y coordinates
+ * - eventually do gridbaglayout, although very complex
+ * 
+ * Note: Methods with labels need to be public.
+ * 
+ * The try/catches can be annoying, but Java needs them (please tell me im wrong).
+ */
+
+public class Generator
+{
+
+	/*
+	 * Creates an array list which each element is a linked list containing a
+	 * single annotation's def this will be used for creating the gui Create an
+	 * array list of annotationholders for Shane.
+	 * 
+	 * Then, create the actual JFrame.
+	 */
+
+	private ArrayList<LinkedList<AnnotationHolder>> annotationList = new ArrayList<LinkedList<AnnotationHolder>>();
+	private ArrayList<AnnotationHolder> binderList = new ArrayList<AnnotationHolder>();
+	private ArrayList<AnnotationHolder> layoutInfo = new ArrayList<AnnotationHolder>();
+	private JFrame shell;
+	private static Class<?> source;
+	private static AnnotationHolder g; // will hold layout information
+
+	private Container content;
+	private Dimension dimen;
+
+	public Generator(Class<?> c) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+	{
+		source = c;
+		parseAnnotations();
+		populateFrame();
+		RyanBinder r = new RyanBinder(shell);
+	}
+
+	/*
+	 * Parses the given source code for annotations and saves them in an
+	 * arraylist, which each index of this array is a linked list that holds
+	 * annotationinformation (using annotationHolder).
+	 * 
+	 * It also creates the export list, which is composed of the annotation type
+	 * and its id. This will be exported to binder.
+	 * 
+	 * The id of each widget is stored in the widget's name field.
+	 */
+	public void parseAnnotations() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+	{
+
+		AnnotationHolder tempAno;
+		LinkedList<AnnotationHolder> currentIndex;
+		Method[] m = source.getMethods();
+		AnnotationHolder binderElement;// list to be exported
+		Class temp;// a proxy for seeing annotations
+		Object value;// contains annotation value
+		boolean isLayout;
+
+		for (Method mf : m)
+		{
+			// Each method can have an annotation list
+			Annotation[] an = mf.getAnnotations();
+			for (Annotation ano : an)
+			{
+				temp = ano.annotationType();// Class is a proxy...
+				isLayout = false;
+				binderElement = new AnnotationHolder(temp.getName().substring(12), -1 + "",
+						temp.getName().substring(12));
+
+				// System.out.println("\nAnnotation Name: " +
+				// temp.getName().substring(12));
+
+				if (temp.getName().contains("layout"))
+				{
+					isLayout = true;
+				}
+				// Needs to clear this list of all contents each iteration
+				currentIndex = new LinkedList<AnnotationHolder>();
+				for (Method met : temp.getDeclaredMethods())
+				{
+					value = met.invoke(ano, (Object[]) null);
+					tempAno = new AnnotationHolder(met.getName(), value.toString(), temp.getName().substring(12));
+					/*
+					 * if it contains layout info...store it in a specialized
+					 * holder and save that to a list. We dont want the layout
+					 * information being inserted into the annotation list.
+					 */
+					if (isLayout)
+					{
+						layoutInfo.add(tempAno);
+					}
+
+					else
+					{
+						currentIndex.add(tempAno);
+
+						if (met.getName().equals("id"))// Shanes list
+						{
+							binderElement = new AnnotationHolder(temp.getName().substring(12), value.toString(),
+									temp.getName().substring(12));
+						}
+						// System.out.println(met.getName() + ": " +
+						// value.toString());
+					}
+
+				}
+				// System.out.println("---------------------------------");
+				/*
+				 * We dont want to add the layout to the annotation list
+				 */
+				if (!isLayout)
+				{
+					annotationList.add(currentIndex);
+					binderList.add(binderElement);
+				}
+
+				isLayout = false;
+			}
+		}
+		/*
+		 * Since the ordering of annotations being read is dynamic and will
+		 * change at each execution, we need to sort the list of saved
+		 * annotations. This will allow the ids to properly display where you
+		 * want them too. I.E.: id 1, then id 2, then 3... all underneath the
+		 * previous. Reflect may save them as 2,1,3, and put 2 on top, 1 in the
+		 * middle, and 3 on the bottom.
+		 * 
+		 * Sorting these annotation lists allows us to keep the
+		 * design-to-implementation promise.
+		 */
+		Collections.sort(annotationList, new Comparator<LinkedList<AnnotationHolder>>()
+		{
+			@Override
+			public int compare(LinkedList<AnnotationHolder> arg0, LinkedList<AnnotationHolder> arg1)
+			{
+				return Integer.compare(Integer.parseInt(getIdValue(arg0)), (Integer.parseInt(getIdValue(arg1))));
+
+			}
+		});
+
+	}
+
+	/*
+	 * Debugging purposes. Prints out the annotation list.
+	 * 
+	 * 
+	 * { System.out.println("\nnow Print Shanes list\n(Name, Id)");
+	 * for(AnnotationHolder a: binderList) { System.out.println(a.getName() +
+	 * ": " + a.getValue()); } } /*for(LinkedList<AnnotationHolder> ah:
+	 * annotationList) { for(AnnotationHolder aa: ah) {
+	 * System.out.println(aa.getName() + ": " + aa.getValue());
+	 * 
+	 * } System.out.println("end of list"); } /* Print out the list of
+	 * annotation names and their ids, for Shane Note: the order of print
+	 * changes on each execution?
+	 */
+
+	// Gives the binderList to Resolver, mainly for binder to use
+
+	protected ArrayList<AnnotationHolder> getBinderList()
+	{
+		return binderList;
+	}
+	// TODO work on the JFrame.
+
+	private void populateFrame()
+	{
+
+		shell = new JFrame("AutoGui");
+		shell.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		dimen = new Dimension();
+
+		content = shell.getContentPane();
+		GridLayout layout = new GridLayout();
+
+		/*
+		 * for(AnnotationHolder a: layoutInfo) {
+		 * //System.out.println(a.getName() + ": " + a.getValue()); }
+		 * //System.out.println("---------------------------------\n"); /* Go
+		 * through the layout annotations and setup the layout of the JFrame
+		 */
+		for (AnnotationHolder a : layoutInfo)
+		{
+			switch (a.getName())
+			{
+			case "range":
+				dimen.height = Integer.parseInt(a.getValue());
+				break;
+			case "domain":
+				dimen.width = Integer.parseInt(a.getValue());
+				break;
+			case "rows":
+				layout.setRows(Integer.parseInt(a.getValue()));
+				break;
+			case "columns":
+				layout.setColumns(Integer.parseInt(a.getValue()));
+				break;
+			case "hGap":
+				layout.setHgap(Integer.parseInt(a.getValue()));
+				break;
+			case "vGap":
+				layout.setVgap(Integer.parseInt(a.getValue()));
+				break;
+			}
+		}
+
+		content.setLayout(layout);
+		/*
+		 * Now, cycle through the list of annotations and create a widget for
+		 * each index in the arraylist.
+		 */
+		for (LinkedList<AnnotationHolder> ah : annotationList)
+		{
+			/*
+			 * Depending on the type, we want to add the appropriate widget to
+			 * the content pane of the JFrame createWidget will determine the
+			 * widget type based on the type string.
+			 * 
+			 * ah is the linked list containing all attributes of a single
+			 * widget type is the widget type (button, label,...)
+			 */
+			String type = ah.getFirst().getType();
+			content.add(createWidget(ah, type));
+
+			System.out.println("end of list");
+		}
+
+		shell.pack();
+		shell.setVisible(true);
+		shell.setSize(dimen);
+
+	}
+
+	/*
+	 * Depending on the type of the widget, this method returns said widget. Its
+	 * main use is to add widgets to the contentpane of the JFrame.
+	 * 
+	 * Each widget will navigate its attribute list and populate itself with the
+	 * values it finds.
+	 */
+	private JComponent createWidget(LinkedList<AnnotationHolder> ah, String type)
+	{
+		// TODO Auto-generated method stub
+		String id = getIdValue(ah);
+		switch (type)
+		{
+		case "label":
+			JLabel label = new JLabel();
+			label.setHorizontalAlignment(SwingConstants.CENTER);
+			label.setName(id);
+			label.setText("asdasd");
+			for (AnnotationHolder aa : ah)
+			{
+				// TODO: use a switch to populate the values of the label
+			}
+			return label;
+		case "button":
+			JButton button = new JButton(id);
+			button.setName(id);
+			for (AnnotationHolder aa : ah)
+			{
+				// TODO: use a switch to populate the values of the button
+			}
+			return button;
+		}
+
+		return null;
+	}
+
+	/*
+	 * Gets the id for the widget sent in. Since an annotation can contain many
+	 * attributes, they are all stored in a list. In order to find the id, we
+	 * must search it. The order of attributes is dynamic, so we must look for
+	 * it.
+	 * 
+	 * This is also used to help sort the annotation arraylist
+	 */
+	private String getIdValue(LinkedList<AnnotationHolder> ah)
+	{
+		// TODO Auto-generated method stub
+		for (AnnotationHolder aa : ah)
+		{
+			if (aa.getName().contains("id"))
+			{
+				return aa.getValue();
+			}
+		}
+		return null;
+	}
+}

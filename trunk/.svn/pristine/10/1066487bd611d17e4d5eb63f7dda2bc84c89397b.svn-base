@@ -1,0 +1,38 @@
+/*
+ * Holds the information of a single annotation
+ */
+public class AnnotationHolder {
+	
+	private String name, value;
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	public String getDesc() {
+		return desc;
+	}
+
+	public void setDesc(String desc) {
+		this.desc = desc;
+	}
+
+	private String desc;
+
+	public AnnotationHolder(String name, String value)
+	{
+		this.name = name;
+		this.value = value;
+	}
+}

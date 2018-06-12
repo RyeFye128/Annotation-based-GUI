@@ -1,0 +1,93 @@
+
+/*
+ * This is the test class being used for reading in annotations.
+ * 
+ * The user must create a method called layout and annotate with with layout. This ensures that the JFrame
+ * can read the layout information.
+ */
+
+public class AnnotatedClass extends Annotations
+{
+
+	@layout(columns = 2, rows = 4, desc = "GridLayout", type = GRIDLAYOUT, domain = 300, range = 300)
+	public static void layout()
+	{
+
+	}
+
+	@button(id = 0, xCord = 0, yCord = 0)
+	public void button1()
+	{
+
+	}
+
+	@button(id = 01, xCord = 0, yCord = 0)
+	public void button2()
+	{
+
+	}
+
+	@button(id = 2, xCord = 0, yCord = 0)
+	public void button3()
+	{
+
+	}
+
+	@button(id = 3, xCord = 0, yCord = 0)
+	public void button4()
+	{
+
+	}
+
+	@button(id = 4, xCord = 0, yCord = 0)
+	public void button5()
+	{
+
+	}
+
+	@button(id = 5, xCord = 0, yCord = 0)
+	public void button6()
+	{
+
+	}
+
+	@button(id = 6, xCord = 0, yCord = 0)
+	public void button7()
+	{
+
+	}
+
+	@button(id = 7, xCord = 0, yCord = 0)
+	public void button8()
+	{
+
+	}
+
+	@button(id = 8, xCord = 0, yCord = 0)
+	public void button9()
+	{
+
+	}
+
+	@label(id = 9, xCord = 0, yCord = 0)
+	public void label10()
+	{
+
+	}
+
+	@button(id = 10, xCord = 0, yCord = 0)
+	public void button10()
+	{
+
+	}
+	@label(id = 11, xCord = 0, yCord = 0)
+	public void label11()
+	{
+
+	}
+
+	/*
+	 * @button(xCord = 0, yCord = 0, id = 3) public static void button() {
+	 * //what does a button do? }
+	 */
+}
